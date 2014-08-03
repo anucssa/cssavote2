@@ -9,7 +9,7 @@ a BLT file can be downloaded.
 
 ## Version
 
-0.1.0
+0.2.0
 
 ## Implementation
 
@@ -35,11 +35,9 @@ The following JSON schema is adopted:
 
     [
       {
-        "Candidate uID":
-        {
-          "elections": ["genrep", "president", ...],
-          "name": "Candidate name"
-        }
+        "id": "Candidate uID",
+        "elections": ["genrep", "president", ...],
+        "name": "Candidate name"
       },
     ...
     ]
@@ -55,13 +53,16 @@ The following JSON schema is adopted:
 
     [
       {
-        "president": {"positions": 1}
+        "name": "president",
+        "positions": 1
       },
       {
-        "secretary": {"positions": 1}
+        "name": "secretary",
+        "positions": 1
       },
       {
-        "genrep": {"positions": 5}
+        "name": "genrep",
+        "positions": 5
       }
     ]
 
@@ -161,8 +162,12 @@ Accepts the following schema:
 
     [
       {
-        "election (e.g. president)": {
-          "Candidate 1 name": "rank (e.g. 1,2,3)",
-        }
+        "election (e.g. president)",
+        [
+          {
+            "name": "Candidate 1 name",
+            "rank (e.g. 1,2,3)"
+          }
+        ]
       }
     ]
