@@ -9,7 +9,7 @@ a BLT file can be downloaded.
 
 ## Version
 
-0.2.1
+0.3.0
 
 ## Implementation
 
@@ -19,7 +19,9 @@ The server provides a JSON API, over which Angular is placed.
 
 ## Admin
 
-All admin type endpoints require an authentication token.
+All admin type endpoints require an authentication token.  This is
+given in the query string as `token`.  The value of this token is
+set in the environment variable `AUTH_TOKEN`.
 
 ### Candidates
 
@@ -144,11 +146,14 @@ Returns the following JSON schema:
 
     [
       {
-        "election (e.g. president)":
-          [
-          "Candidate 1 name",
-          "Candidate 2 name"
-          ]
+        "election": "e.g. president",
+        "positions": "integer",
+        "candidates": [
+          {
+            "name": "candidate name",
+            "id": "candidate uid"
+          }
+        ]
       }
     ]
 
@@ -156,17 +161,19 @@ Returns the following JSON schema:
 
 Only has one endpoint:
 
-    POST /votes
+    POST /votes?token=...
+
+Where the token parameter was given by `/votingcode`.
 
 Accepts the following schema:
 
     [
       {
-        "election (e.g. president)",
-        [
+        "election": "e.g. president",
+        "votes": [
           {
-            "name": "Candidate 1 name",
-            "rank (e.g. 1,2,3)"
+            "id": "candidate id",
+            "rank": "e.g. 1,2,3"
           }
         ]
       }
@@ -190,4 +197,12 @@ Accepts the following schema:
     votingcodes     # set;   list of all codes
     votingcode:id   # hash;  fields: code (string), token (string),
                                      used (boolean), new (boolean)
+    tokens          # set;   set of all valid tokens
+    votingcode_increment # integer;
+
+#### Votes
+
+    votes:election:id  # list;  list of votes a candidate got for
+                                an election (i.e. 1 1 4 3 1)
+
 
