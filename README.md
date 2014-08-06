@@ -9,7 +9,7 @@ a BLT file can be downloaded.
 
 ## Version
 
-0.2.0
+0.2.1
 
 ## Implementation
 
@@ -171,3 +171,23 @@ Accepts the following schema:
         ]
       }
     ]
+
+### Redis Summary
+
+#### Candidates
+
+    candidate:uID   # hash;  fields: name
+    candidates      # set;   list of all candidates
+    election:uID    # set;   elections candidate is in
+
+#### Elections
+
+    elections       # set;   names of elections
+    election:name   # hash;  fields: positions (integer)
+
+#### VotingCodes
+
+    votingcodes     # set;   list of all codes
+    votingcode:id   # hash;  fields: code (string), token (string),
+                                     used (boolean), new (boolean)
+
