@@ -1,6 +1,10 @@
 require 'sinatra'
 require 'redis'
 require 'json'
+require 'dalli'
+
+options = { :namespace => "app_v1", :compress => true }
+$cache = Dalli::Client.new('localhost:11211', options)
 
 $redis = Redis.new
 
@@ -136,6 +140,31 @@ post('/admin/votingcodes') do
   200
 end
 
+get('/admin/votes') do
+end
+
+get('/admin/votes.blt') do
+  content_type 'text/plain'
+
+  # For each election
+  $redis.smembers("elections").each do |election|
+    output = ""
+
+    cs = candidates_for(election).map {|n| n['uid'] }
+
+    positions = $redis.hget("election:#{election}", "positions")
+
+    output += "#{cs.length} #{positions}\n"
+
+    # For each candidate
+    cs.each do |candidate|
+      votes = $redis.lrange(,0, $redis.llen())
+    end
+  end
+
+  output
+end
+
 post('/votingcode') do
   content_type 'text/json'
 
@@ -193,7 +222,7 @@ post('/votes') do
   input = JSON.parse(request.body.read)
 
   input.each do |n|
-    n["votes"].each do |candidate|
+    n["votes"].each do |c|
       $redis.lpush("votes:#{n["election"]}:#{c["id"]}", c["rank"])
     end
   end

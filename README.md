@@ -9,7 +9,7 @@ a BLT file can be downloaded.
 
 ## Version
 
-0.3.0
+0.4.0
 
 ## Implementation
 
@@ -101,6 +101,17 @@ Each code is six characters long.  The used value refers to whether
 or not the code has been used to vote yet.  The new value
 is used to tell whether or not the code has been handed out
 to someone.
+
+### Ballot files
+
+Two endpoints are given:
+
+    GET /admin/votes
+    GET /admin/votes.blt
+
+The first is a JSON representation, and the second is a BLT file.
+The JSON schema follows that of the `POST /votes` route.
+
 
 ## General
 
@@ -204,5 +215,4 @@ Accepts the following schema:
 
     votes:election:id  # list;  list of votes a candidate got for
                                 an election (i.e. 1 1 4 3 1)
-
 
