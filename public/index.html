@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html ng-app="cssavote">
+<head>
+  <title></title>
+  <script src="/js/angular.min.js" type="text/javascript"></script>
+  <script src="http://code.jquery.com/jquery-2.1.1.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+  <div ng-controller="votingcode">
+    <input type="string" id="votingcode" value="{{votingcode}}" />
+    <button type="submit" ng-click="submit_votingcode()">Submit</button>
+  </div>
+
+  <div ng-controller="elections" style="display: none;" id="elections">
+    {{ elections }}
+  </div>
+
+  <script type="text/javascript">
+    var app = angular.module("cssavote", []);
+
+    function go_to_elections_view() {
+      $("#elections").css("display","block");
+    }
+
+    app.controller("votingcode", ['$scope', '$http',
+      function ($scope, $http) {
+        $scope.votingcode = "fooo"
+
+        $scope.submit_votingcode = function() {
+          $http.post('/votingcode', {code:$scope.votingcode})
+          .success(function(data, status, headers, config) {
+            token = data.token;  // global by nature
+            go_to_elections_view();
+          })
+          .error(function(data, status, headers, config) {
+            console.log("Invalid code");
+          })
+        }
+    }]);
+
+    app.controller("elections", ['$scope', '$http',
+      function ($scope, $http) {
+        $http.get('/elections').success(function(data, status, headers, config) {
+          $scope.elections = data;
+        })
+
+        $scope.submit_votes = function() {
+          $http.post('/votes', $scope.elections)
+          .success(function(data, status, headers, config) {
+          })
+          .error(function(data, status, headers, config) {
+            console.log("Invalid token");
+          })
+        }
+    }]);
+  </script>
+</body>
+</html>
