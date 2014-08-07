@@ -6,19 +6,15 @@ $redis = Redis.new
 
 def candidates_for(election)
   candidates = $redis.smembers("candidates").map do |n|
-    { uid: n,
-      name: $redis.hget("candidate:#{n}", "name"),
-      elections: $redis.smembers("election:#{n}")
+    {
+      uid: n,
+      name: $redis.hget("candidate:#{n}", "name")
     }
   end
 
   candidates.delete_if do |i|
-    not i[:elections].include?(election)
-  end
-
-  candidates.map! do |i|
-    i.delete("elections")
-    i
+    ret = $redis.smembers("election:#{i[:uid]}"); ret ||= []
+    not ret.include?(election)
   end
 
   candidates
