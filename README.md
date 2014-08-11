@@ -9,7 +9,7 @@ a BLT file can be downloaded.
 
 ## Version
 
-0.4.0
+0.5.0
 
 ## Implementation
 
@@ -22,6 +22,29 @@ The server provides a JSON API, over which Angular is placed.
 All admin type endpoints require an authentication token.  This is
 given in the query string as `token`.  The value of this token is
 set in the environment variable `AUTH_TOKEN`.
+
+If the system is locked, an offending post request will be responded
+to with a 403.
+
+### Vote lock
+
+The system can be in one of two states.  Either preparation, or voting.
+In the preparation state, candidates and elections can be modified,
+but voting cannot occur (voting tokens are not given).
+In the voting state, candidates and elections cannot be modified, but
+votes can be cast.
+
+This provides two endpoints:
+
+    GET /admin/votelock
+    POST /admin/votelock
+
+It accepts the followed schema:
+
+    {
+      "state": one of either "voting" or "editing"
+    }
+
 
 ### Candidates
 
@@ -104,14 +127,11 @@ to someone.
 
 ### Ballot files
 
-Two endpoints are given:
+One endpoint is given:
 
-    GET /admin/votes
     GET /admin/votes.blt
 
-The first is a JSON representation, and the second is a BLT file.
-The JSON schema follows that of the `POST /votes` route.
-
+Each election is separated by two new lines.
 
 ## General
 
@@ -192,16 +212,22 @@ Accepts the following schema:
 
 ### Redis Summary
 
+#### System state
+
+    votelock        # string; what state the system is in
+
 #### Candidates
 
     candidate:uID   # hash;  fields: name
     candidates      # set;   list of all candidates
-    election:uID    # set;   elections candidate is in
+    elections:uID   # set;   elections candidate is in
 
 #### Elections
 
     elections       # set;   names of elections
-    election:name   # hash;  fields: positions (integer)
+    election:name   # hash;  fields: positions --> (integer),
+                                     candidate id --> numbers (1, 2, 3),
+                                     candidates --> (integer)
 
 #### VotingCodes
 
@@ -213,6 +239,7 @@ Accepts the following schema:
 
 #### Votes
 
-    votes:election:id  # list;  list of votes a candidate got for
-                                an election (i.e. 1 1 4 3 1)
+    votes:election  # list;  list of votes a for an election
+                             (i.e. "1 3 4 2", "2 3 4 1")
+                             [0] is the first candidate
 

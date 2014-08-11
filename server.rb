@@ -1,34 +1,39 @@
 require 'sinatra'
 require 'redis'
 require 'json'
-require 'dalli'
-
-options = { :namespace => "app_v1", :compress => true }
-$cache = Dalli::Client.new('localhost:11211', options)
 
 $redis = Redis.new
 
 def candidates_for(election)
-  candidates = $redis.smembers("candidates").map do |n|
-    {
-      uid: n,
-      name: $redis.hget("candidate:#{n}", "name")
-    }
-  end
-
-  candidates.delete_if do |i|
-    ret = $redis.smembers("election:#{i[:uid]}"); ret ||= []
-    not ret.include?(election)
-  end
-
-  candidates
+  $redis.hgetall("election:#{election}").delete_if do |k,v|
+    not k.match /[0-9]+/
+  end.invert # end up with {"u555555" => "1"}
 end
 
 before '/admin/*' do
   if params["token"] != ENV["AUTH_TOKEN"]
+    status 401
+    halt
+  end
+end
+
+def locked_req!
+  if $redis.get("votingcode") == "voting"
     status 403
     halt
   end
+end
+
+get('/admin/votelock') do
+  content_type 'text/json'
+
+  JSON.generate({state: $redis.get("votelock")})
+end
+
+post('/admin/votelock') do
+  input = JSON.parse(request.body.read)
+  $redis.set("votelock", input["state"])
+  200
 end
 
 get('/admin/candidates') do
@@ -37,7 +42,7 @@ get('/admin/candidates') do
   payload = $redis.smembers("candidates").map do |uid|
     {
       id: uid,
-      elections: $redis.smembers("election:#{uid}")
+      elections: $redis.smembers("elections:#{uid}")
     }.merge($redis.hgetall("candidate:#{uid}"))
   end
 
@@ -45,20 +50,33 @@ get('/admin/candidates') do
 end
 
 post('/admin/candidates') do
+
+  locked_req!
+
   input = JSON.parse(request.body.read)
   input.each {|n| return 500 unless n["id"] }
 
   # Clear out the current candidates
   $redis.smembers("candidates").each do |n|
+    $redis.smembers("elections").each do |e|
+      candidates_for(e).each do |c,pos|
+        $redis.hdel("election:#{e}", c)
+      end
+    end
     $redis.del("candidate:#{n}")
-    $redis.del("election:#{n}")
+    $redis.del("elections:#{n}")
   end
   $redis.del("candidates")
 
   input.each {|n| $redis.sadd("candidates", n["id"]) }
   input.each do |n|
     $redis.hmset("candidate:#{n["id"]}", "name", n["name"])
-    n["elections"].each {|e| $redis.sadd("election:#{n["id"]}", e) }
+
+    # add each candidate to their allotted elections
+    n["elections"].each do |e|
+      $redis.sadd("elections:#{n["id"]}", e)
+      $redis.hmset("election:#{e}", candidates_for(e).length + 1, n["id"])
+    end
   end
 
   200
@@ -68,13 +86,19 @@ get('/admin/elections') do
   content_type 'text/json'
 
   payload = $redis.smembers("elections").map do |election|
-    {name: election}.merge($redis.hgetall("election:#{election}"))
+    {
+      name: election,
+      positions: $redis.hget("election:#{election}", "positions")
+    }
   end
 
   JSON.generate(payload)
 end
 
 post('/admin/elections') do
+
+  locked_req!
+
   input = JSON.parse(request.body.read)
 
   input.each do |election|
@@ -110,6 +134,13 @@ get('/admin/votingcodes/more') do
 
   10.times do
     code = (Digest::SHA2.new() << input.to_s + Time.now.to_s).to_s.slice(0,7)
+
+    if $redis.sismember("votingcodes", code)
+      input += 1
+      puts "ffs, why"
+      redo
+    end
+
     $redis.sadd("votingcodes", code)
     $redis.hmset("votingcode:#{code}",
       "code", code,
@@ -126,6 +157,9 @@ get('/admin/votingcodes/more') do
 end
 
 post('/admin/votingcodes') do
+
+  locked_req!
+
   input = JSON.parse(request.body.read)
 
   input.each do |n|
@@ -141,25 +175,47 @@ post('/admin/votingcodes') do
 end
 
 get('/admin/votes') do
+
 end
 
 get('/admin/votes.blt') do
   content_type 'text/plain'
 
+  output = ""
+
   # For each election
   $redis.smembers("elections").each do |election|
-    output = ""
-
-    cs = candidates_for(election).map {|n| n['uid'] }
+    output += "#{election}\n\n"
 
     positions = $redis.hget("election:#{election}", "positions")
 
-    output += "#{cs.length} #{positions}\n"
+    # Work out what order the candidates are in
+    candidates = candidates_for(election)
 
-    # For each candidate
-    cs.each do |candidate|
-      votes = $redis.lrange(,0, $redis.llen())
+    output += "#{candidates.length} #{positions}\n"
+
+    votes = $redis.lrange("votes:#{election}", 0, $redis.llen("votes:#{election}")).sort
+
+    counter = 0
+    votes.length.times do |i|
+      if votes[i] == votes[i+1]
+        counter += 1
+      elsif counter > 0 # there have been a few
+        output += "#{counter} #{votes[i]} 0\n"
+        counter = 0
+      else
+        counter = 0
+        output += "1 #{votes[i]} 0\n"
+      end
     end
+
+    output += "0\n"
+
+    candidates.sort {|a,b| a[1] <=> b[1] }.each do |i|
+      output += "\"#{i[0]}\"\n"
+    end
+
+    output += "\n\n"
   end
 
   output
@@ -200,10 +256,17 @@ get('/elections') do
   content_type 'text/json'
 
   payload = $redis.smembers("elections").map do |n|
+    candidates = candidates_for(n).map do |id,pos|
+      {
+        "name" => $redis.hget("candidate:#{id}", "name"),
+        "id"   => id
+      }
+    end
+
     {
       election: n,
       positions: $redis.hget("election:#{n}", "positions"),
-      candidates: candidates_for(n)
+      candidates: candidates
     }
   end
 
@@ -211,20 +274,25 @@ get('/elections') do
 end
 
 post('/votes') do
-  content_type 'text/json'
 
   if (not $redis.sismember("tokens", params["token"])) and (not settings.development?)
     return 403
+  else
+    $redis.srem("tokens", params["token"])
   end
-
-  $redis.srem("tokens", params["token"])
 
   input = JSON.parse(request.body.read)
 
   input.each do |n|
-    n["votes"].each do |c|
-      $redis.lpush("votes:#{n["election"]}:#{c["id"]}", c["rank"])
+    votes = []
+    candidates = candidates_for(n["election"])
+    n["votes"].map do |c|
+      votes[ candidates[c["id"]].to_i ] = c["rank"]
     end
+
+    votes.delete_if {|n| not n } # clear nils
+    votes = votes.reduce("") {|memo, obj| memo += obj + " " }.strip
+    $redis.lpush("votes:#{n["election"]}", votes)
   end
 
   200
