@@ -243,3 +243,7 @@ Accepts the following schema:
                              (i.e. "1 3 4 2", "2 3 4 1")
                              [0] is the first candidate
 
+#### Caches
+
+    cache:votes.blt  # string;
+

@@ -174,12 +174,11 @@ post('/admin/votingcodes') do
   200
 end
 
-get('/admin/votes') do
-
-end
-
 get('/admin/votes.blt') do
   content_type 'text/plain'
+
+  cached = $redis.get("cache:votes.blt")
+  return cached if cached
 
   output = ""
 
@@ -217,6 +216,8 @@ get('/admin/votes.blt') do
 
     output += "\n\n"
   end
+
+  $redis.set("cache:votes.blt", output)
 
   output
 end
@@ -294,6 +295,9 @@ post('/votes') do
     votes = votes.reduce("") {|memo, obj| memo += obj + " " }.strip
     $redis.lpush("votes:#{n["election"]}", votes)
   end
+
+  # invalidate the BLT cache
+  $redis.del("cache:votes.blt")
 
   200
 
