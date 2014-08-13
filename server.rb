@@ -11,7 +11,11 @@ def candidates_for(election)
 end
 
 before '/admin/*' do
-  if params["token"] != ENV["AUTH_TOKEN"]
+  puts "Hello filter"
+  given_token = (Digest::SHA2.new << (params["token"] || " ")).to_s
+  actual_token = (Digest::SHA2.new << (ENV["AUTH_TOKEN"] || " ")).to_s
+
+  if not secure_compare(given_token, actual_token)
     status 401
     halt
   end
