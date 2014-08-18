@@ -7,7 +7,7 @@ require './server.rb'
 $redis = Redis.new
 
 def clear_redis
-  $redis.keys("*").each {|n| $redis.del(n) }
+  $redis.keys("*").each {|n| $redis.del(n) if n != "votelock" }
 end
 
 describe "The Admin part" do
@@ -84,6 +84,21 @@ describe "The Admin part" do
     expect(last_response).to be_ok
 
     ENV.delete "AUTH_TOKEN"
+  end
+
+  it "prevents schema modification on on vote lock" do
+    get "/admin/votelock"
+    puts last_response.body
+    expect(JSON.parse(last_response.body)["state"]).to eq("editing")
+
+    post "/admin/votelock", JSON.generate({state: "voting"})
+    expect(last_response).to be_ok
+
+    post "/admin/candidates", JSON.generate({})
+    expect(last_response).to_not be_ok
+
+    post "/admin/elections", JSON.generate({})
+    expect(last_response).to_not be_ok
   end
 end
 
