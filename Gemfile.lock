@@ -38,11 +38,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-<<<<<<< HEAD
   fast_secure_compare
-=======
   rack-test
->>>>>>> elections/candidates covered
   redis
   rspec
   sinatra
