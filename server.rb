@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'redis'
 require 'json'
+require 'fast_secure_compare'
 
 $redis = Redis.new
 $redis.set("votelock", "editing")
@@ -12,10 +13,10 @@ def candidates_for(election)
 end
 
 before '/admin/*' do
-  given_token = (Digest::SHA2.new << (params["token"] || " ")).to_s
-  actual_token = (Digest::SHA2.new << (ENV["AUTH_TOKEN"] || " ")).to_s
+  given_token = params["token"] || ""
+  actual_token = ENV["AUTH_TOKEN"] || ""
 
-  if not secure_compare(given_token, actual_token)
+  if not FastSecureCompare.compare(actual_token, given_token)
     status 401
     halt
   end
