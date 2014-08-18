@@ -3,6 +3,7 @@ require 'redis'
 require 'json'
 
 $redis = Redis.new
+$redis.set("votelock", "editing")
 
 def candidates_for(election)
   $redis.hgetall("election:#{election}").delete_if do |k,v|
@@ -11,7 +12,6 @@ def candidates_for(election)
 end
 
 before '/admin/*' do
-  puts "Hello filter"
   given_token = (Digest::SHA2.new << (params["token"] || " ")).to_s
   actual_token = (Digest::SHA2.new << (ENV["AUTH_TOKEN"] || " ")).to_s
 
@@ -22,7 +22,7 @@ before '/admin/*' do
 end
 
 def locked_req!
-  if $redis.get("votingcode") == "voting"
+  if $redis.get("votelock") == "voting"
     status 403
     halt
   end
@@ -141,7 +141,6 @@ get('/admin/votingcodes/more') do
 
     if $redis.sismember("votingcodes", code)
       input += 1
-      puts "ffs, why"
       redo
     end
 
