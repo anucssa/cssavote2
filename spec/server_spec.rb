@@ -145,11 +145,33 @@ describe "The General part" do
   end
 
   before(:all) do
+    clear_redis
     post '/admin/elections', JSON.generate(ELECTIONS)
     post '/admin/candidates', JSON.generate(CANDIDATES)
     post '/admin/votelock', JSON.generate({state: "voting"})
+    get '/admin/votingcodes/more'
 
     get '/admin/votelock'
     expect(JSON.parse(last_response.body)["state"]).to eq("voting")
   end
+
+  it "gives out voting tokens" do
+    get "/admin/votingcodes"
+    voting_code = JSON.parse(last_response.body).first["code"]
+
+    puts voting_code
+
+    post "/votingcode", JSON.generate({votingcode: voting_code})
+    expect(last_response).to be_ok
+    expect(JSON.parse(last_response.body)).to include("token")
+  end
+
+  it "returns accurate election count" do
+    get "/elections"
+    expect(last_response).to be_ok
+    response = JSON.parse(last_response.body)
+
+    expect(response.length).to be ELECTIONS.length
+  end
+
 end
