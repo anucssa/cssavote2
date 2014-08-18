@@ -4,6 +4,7 @@ require 'json'
 require 'fast_secure_compare'
 
 $redis = Redis.new
+$redis.set("votelock", "editing")
 
 def candidates_for(election)
   $redis.hgetall("election:#{election}").delete_if do |k,v|
@@ -12,7 +13,6 @@ def candidates_for(election)
 end
 
 before '/admin/*' do
-  puts "Hello filter"
   given_token = params["token"] || ""
   actual_token = ENV["AUTH_TOKEN"] || ""
 
@@ -23,7 +23,7 @@ before '/admin/*' do
 end
 
 def locked_req!
-  if $redis.get("votingcode") == "voting"
+  if $redis.get("votelock") == "voting"
     status 403
     halt
   end
@@ -142,7 +142,6 @@ get('/admin/votingcodes/more') do
 
     if $redis.sismember("votingcodes", code)
       input += 1
-      puts "ffs, why"
       redo
     end
 
