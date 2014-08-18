@@ -156,7 +156,7 @@ Only has one endpoint:
 The following JSON schema is adopted:
 
     {
-      "code": "unique six-char code"
+      "votingcode": "unique six-char code"
     }
 
 A token is returned if successful:
@@ -246,4 +246,3 @@ Accepts the following schema:
 #### Caches
 
     cache:votes.blt  # string;
-
