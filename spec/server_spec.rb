@@ -206,27 +206,26 @@ describe "The General part" do
     end
   end
 
-    it "doesnt let voting codes be reused" do
-      vote_count = $redis.lrange("votes:president", 0, -1).length
+  it "doesnt let voting codes be reused" do
+    vote_count = $redis.lrange("votes:president", 0, -1).length
 
-      get "/admin/votingcodes"
-      voting_code = JSON.parse(last_response.body).first["code"]
-      post "/votingcode", JSON.generate({votingcode: voting_code})
-      voting_token = JSON.parse(last_response.body)["token"]
+    get "/admin/votingcodes"
+    voting_code = JSON.parse(last_response.body).first["code"]
+    post "/votingcode", JSON.generate({votingcode: voting_code})
+    voting_token = JSON.parse(last_response.body)["token"]
 
-      payload = [{
-        election: "president",
-        votes: [{
-            id: "u1234567",
-            rank: "1"
-        }]
+    payload = [{
+      election: "president",
+      votes: [{
+          id: "u1234567",
+          rank: "1"
       }]
+    }]
 
-      post "/votes?token=#{voting_token}", JSON.generate(payload)
-      expect(last_response).to be_ok
-      post "/votes?token=#{voting_token}", JSON.generate(payload)
-      expect($redis.lrange("votes:president", 0, -1).length).to be (vote_count + 1)
-      expect(last_response).to_not be_ok
-
+    post "/votes?token=#{voting_token}", JSON.generate(payload)
+    expect(last_response).to be_ok
+    post "/votes?token=#{voting_token}", JSON.generate(payload)
+    expect($redis.lrange("votes:president", 0, -1).length).to be (vote_count + 1)
+    expect(last_response).to_not be_ok
   end
 end

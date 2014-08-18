@@ -9,11 +9,18 @@ a BLT file can be downloaded.
 
 ## Version
 
-0.5.0
+0.5.1
 
 ## Implementation
 
 The server provides a JSON API, over which Angular is placed.
+
+## Tests
+
+An rspec test suite exists for the API which can be invoked from the repository root:
+```bash
+RACK_ENV=test rspec spec/server_spec.rb
+```
 
 ## API Definition
 
