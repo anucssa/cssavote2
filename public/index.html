@@ -160,6 +160,24 @@
             <button type="submit" ng-click="submit_votes()" class="btn btn-lg btn-primary btn-block">Submit votes</button>
         </form>
     </div>
+
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Thank you</h4>
+                </div>
+                <div class="modal-body">
+                    Votes submitted successfully!
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!--<div class="blog-footer">-->
@@ -184,7 +202,7 @@
 
     app.controller("votingcode", ['$scope', '$http',
         function ($scope, $http) {
-            $scope.votingcode = "fooo"
+            $scope.votingcode = "fooo";
 
             $scope.submit_votingcode = function() {
                 $http.post('/votingcode', {votingcode:$scope.votingcode})
@@ -224,13 +242,16 @@
                         }
                         e.votes.push(v);
                     }
-
+                    votes.push(e);
                     console.log(e);
                 }
 
-                $http.post('/votes?token=' + token, e)
+                $http.post('/votes?token=' + token, votes)
                         .success(function(data, status, headers, config) {
                             console.log("Done!");
+                            $('#myModal').modal('toggle');
+                            $("#signin").css("display","block");
+                            $("#elections").css("display","none");
                         })
                         .error(function(data, status, headers, config) {
                             console.log("Invalid token");
