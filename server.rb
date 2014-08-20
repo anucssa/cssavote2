@@ -9,8 +9,7 @@ $redis.set("votelock", "editing")
 #`set :public_folder, File.dirname(__FILE__) + '/public'
 
 get '/' do
-  #redirect '/index.html'
-  "Hello"
+  redirect '/index.html'
 end
 
 def candidates_for(election)
@@ -297,7 +296,7 @@ post('/votes') do
     return 400 if not n["votes"]
     return 400 if not n["election"]
     return 400 if not $redis.sismember("elections", n["election"])
-    
+
     votes = []
     candidates = candidates_for(n["election"])
     n["votes"].map do |c|
