@@ -12,8 +12,15 @@
     <button type="submit" ng-click="submit_votingcode()">Submit</button>
   </div>
 
-  <div ng-controller="elections" style="display: none;" id="elections">
-    {{ elections }}
+  <div ng-controller="elections" style="display: one;" id="elections">
+    <div ng-repeat="e in elections">
+      <h1>{{ e.election }}</h1>
+      <div ng-repeat="c in e.candidates">
+        {{c.name}}
+        <input type="text" ng-model="c.rank"></input>
+      </div>
+    </div>
+    <button type="submit" ng-click="submit_votes()">Submit votes</button>
   </div>
 
   <script type="text/javascript">
@@ -28,7 +35,7 @@
         $scope.votingcode = "fooo"
 
         $scope.submit_votingcode = function() {
-          $http.post('/votingcode', {code:$scope.votingcode})
+          $http.post('/votingcode', {votingcode:$scope.votingcode})
           .success(function(data, status, headers, config) {
             token = data.token;  // global by nature
             go_to_elections_view();
@@ -43,17 +50,42 @@
       function ($scope, $http) {
         $http.get('/elections').success(function(data, status, headers, config) {
           $scope.elections = data;
+          elections = data;
         })
 
         $scope.submit_votes = function() {
-          $http.post('/votes', $scope.elections)
+          votes = [];
+          for (election in $scope.elections) {
+            var e = {};
+            e.election = $scope.elections[election].election;
+            e.votes = [];
+            for (candidate in $scope.elections[election].candidates) {
+              var v = {};
+              v.id = $scope.elections[election].candidates[candidate].id;
+
+              // ensure that each candidate has been voted on
+              if (!$scope.elections[election].candidates[candidate].rank) {
+                // should raise an error
+                return;
+              } else {
+                v.rank = $scope.elections[election].candidates[candidate].rank;
+              }
+              e.votes.push(v);
+            }
+
+            console.log(e);
+          }
+
+          $http.post('/votes?token=' + token, e)
           .success(function(data, status, headers, config) {
+            console.log("Done!");
           })
           .error(function(data, status, headers, config) {
             console.log("Invalid token");
           })
         }
     }]);
+
   </script>
 </body>
 </html>

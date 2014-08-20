@@ -10,7 +10,6 @@ def clear_redis
   $redis.keys("*").each {|n| $redis.del(n) if n != "votelock" }
 end
 
-
 ELECTIONS = [
   {
     name: "president",

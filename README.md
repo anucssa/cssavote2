@@ -49,7 +49,7 @@ This provides two endpoints:
 It accepts the followed schema:
 
     {
-      "state": one of either "voting" or "editing"
+      "state": one of either "voting (default)" or "editing"
     }
 
 

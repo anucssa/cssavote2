@@ -6,6 +6,13 @@ require 'fast_secure_compare'
 $redis = Redis.new
 $redis.set("votelock", "editing")
 
+#`set :public_folder, File.dirname(__FILE__) + '/public'
+
+get '/' do
+  #redirect '/index.html'
+  "Hello"
+end
+
 def candidates_for(election)
   $redis.hgetall("election:#{election}").delete_if do |k,v|
     not k.match /[0-9]+/
