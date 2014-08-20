@@ -289,16 +289,22 @@ post('/votes') do
 
   if (not $redis.sismember("tokens", params["token"])) and (not settings.development?)
     return 403
-  else
-    $redis.srem("tokens", params["token"])
   end
 
   input = JSON.parse(request.body.read)
 
   input.each do |n|
+    return 400 if not n["votes"]
+    return 400 if not n["election"]
+    return 400 if not $redis.sismember("elections", n["election"])
+    
     votes = []
     candidates = candidates_for(n["election"])
     n["votes"].map do |c|
+      return 400 if not c["id"]
+      return 400 if not candidates[c["id"]]
+      return 400 if not c["rank"].match(/[0-9]+/)
+
       votes[ candidates[c["id"]].to_i ] = c["rank"]
     end
 
@@ -309,6 +315,8 @@ post('/votes') do
 
   # invalidate the BLT cache
   $redis.del("cache:votes.blt")
+
+  $redis.srem("tokens", params["token"])
 
   200
 
