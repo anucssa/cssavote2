@@ -127,10 +127,6 @@
         </form>
     </div>
 
-    <!--<div class="page-header">-->
-        <!--<h1>Submit Name</h1>-->
-    <!--</div>-->
-
 
     <div ng-controller="elections" style="display:none;" id="elections">
         <form class="panel-group" id="accordion">
@@ -148,9 +144,9 @@
                             <div class="col-md-8" style="font-size: 20px">
                                 {{c.name}}
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-2">
                                 <label>
-                                    <input type="text" ng-model="c.rank" required>
+                                    <input id='rank' type="text" ng-model="c.rank" required>
                                 </label>
                             </div>
                         </div>
@@ -252,6 +248,7 @@
                             $('#myModal').modal('toggle');
                             $("#signin").css("display","block");
                             $("#elections").css("display","none");
+                            $(':input').val('');
                         })
                         .error(function(data, status, headers, config) {
                             console.log("Invalid token");
