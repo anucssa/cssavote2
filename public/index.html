@@ -198,7 +198,6 @@
 
     app.controller("votingcode", ['$scope', '$http',
         function ($scope, $http) {
-            $scope.votingcode = "fooo";
 
             $scope.submit_votingcode = function() {
                 $http.post('/votingcode', {votingcode:$scope.votingcode})
