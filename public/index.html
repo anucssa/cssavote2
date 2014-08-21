@@ -120,7 +120,7 @@
     <div ng-controller="votingcode" id="signin">
         <form class="form-signin" role="form">
             <h4 class="form-signin-heading">Please enter voting code</h4>
-            <input type="string" id="votingcode" class="form-control" placeholder="Voting Code" value="{{votingcode}}" required autofocus>
+            <input type="string" id="votingcode" class="form-control" placeholder="Voting Code" value="{{votingcode}}" ng-model="votingcode" required autofocus>
             <button type="submit" ng-click="submit_votingcode()" class="btn btn-lg btn-primary btn-block">Submit</button>
         </form>
     </div>
@@ -196,6 +196,7 @@
 
     app.controller("votingcode", ['$scope', '$http',
         function ($scope, $http) {
+          $scope.votingcode = "";
 
             $scope.submit_votingcode = function() {
                 $http.post('/votingcode', {votingcode:$scope.votingcode})
