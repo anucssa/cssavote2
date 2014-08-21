@@ -35,6 +35,13 @@ def locked_req!
   end
 end
 
+def locked_pub_req!
+  if $redis.get("votelock") != "voting"
+    status 403
+    halt
+  end
+end
+
 get('/admin/votelock') do
   content_type 'text/json'
 
@@ -233,6 +240,8 @@ get('/admin/votes.blt') do
 end
 
 post('/votingcode') do
+  locked_pub_req!
+
   content_type 'text/json'
 
   input = JSON.parse(request.body.read)
@@ -264,6 +273,8 @@ post('/votingcode') do
 end
 
 get('/elections') do
+  locked_pub_req!
+
   content_type 'text/json'
 
   payload = $redis.smembers("elections").map do |n|
@@ -285,6 +296,8 @@ get('/elections') do
 end
 
 post('/votes') do
+
+  locked_pub_req!
 
   if (not $redis.sismember("tokens", params["token"])) and (not settings.development?)
     return 403
