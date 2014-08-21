@@ -30,7 +30,7 @@ CANDIDATES = [
     name: "Steve Balmer"
   }, {
     id: "u7654321",
-    elections: ["secretary", "genrep"],
+    elections: ["secretary", "genrep", "president"],
     name: "Steve Jobs"
   }
 ]
@@ -147,8 +147,8 @@ describe "The General part" do
     clear_redis
     post '/admin/elections', JSON.generate(ELECTIONS)
     post '/admin/candidates', JSON.generate(CANDIDATES)
-    post '/admin/votelock', JSON.generate({state: "voting"})
     get '/admin/votingcodes/more'
+    post '/admin/votelock', JSON.generate({state: "voting"})
 
     get '/admin/votelock'
     expect(JSON.parse(last_response.body)["state"]).to eq("voting")
@@ -218,6 +218,9 @@ describe "The General part" do
       votes: [{
           id: "u1234567",
           rank: "1"
+      }, {
+          id: "u7654321",
+          rank: "2"
       }]
     }]
 
@@ -227,4 +230,51 @@ describe "The General part" do
     expect($redis.lrange("votes:president", 0, -1).length).to be (vote_count + 1)
     expect(last_response).to_not be_ok
   end
+
+  it "doesnt let non-sequential votes be made" do
+    get "/admin/votingcodes"
+    voting_codes = JSON.parse(last_response.body)
+    post "/votingcode", JSON.generate({votingcode: voting_codes[0]["code"]})
+    voting_token = JSON.parse(last_response.body)["token"]
+    post "/votes?token=#{voting_token}", JSON.generate([{
+      election: "president",
+      votes: [{
+          id: "u1234567",
+          rank: "1"
+      }, {
+          id: "u7654321",
+          rank: "2"
+      }]
+    }])
+    expect(last_response).to be_ok
+   
+    post "/votingcode", JSON.generate({votingcode: voting_codes[1]["code"]})
+    voting_token = JSON.parse(last_response.body)["token"]
+    post "/votes?token=#{voting_token}", JSON.generate([{
+      election: "president",
+      votes: [{
+          id: "u1234567",
+          rank: "0"
+      }, {
+          id: "u7654321",
+          rank: "1"
+      }]
+    }])
+    expect(last_response).to_not be_ok
+
+    post "/votingcode", JSON.generate({votingcode: voting_codes[2]["code"]})
+    voting_token = JSON.parse(last_response.body)["token"]
+    post "/votes?token=#{voting_token}", JSON.generate([{
+      election: "president",
+      votes: [{
+          id: "u1234567",
+          rank: "1"
+      }, {
+          id: "u7654321",
+          rank: "3"
+      }]
+    }])
+    expect(last_response).to_not be_ok
+  end
 end
+

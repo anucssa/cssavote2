@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'redis'
 require 'json'
+require 'set'
 require 'fast_secure_compare'
 
 $redis = Redis.new
@@ -305,8 +306,17 @@ post('/votes') do
 
   input = JSON.parse(request.body.read)
 
+  # check election votes are numbered 1..no_candidates inclusive
   input.each do |n|
-    return 400 if not n["votes"]
+    return 400 if not ["votes"]
+
+    vote_set = n["votes"].map {|v| v["rank"].to_i}.to_set
+    return 400 if vote_set.length != n["votes"].length or #no repeat numbers 
+       vote_set.min != 1 or #starts at pref 1
+       vote_set.max != n["votes"].length # 1..length inclusive
+  end
+
+  input.each do |n|
     return 400 if not n["election"]
     return 400 if not $redis.sismember("elections", n["election"])
 
